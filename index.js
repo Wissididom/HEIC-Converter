@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const convert = require('heic-convert');
-const bot = new Client({intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages], partials: [Partials.User, Partials.Channels, Partials.GuildMemeber, Partials.Message, Partials.Reaction]});
+const bot = new Client({intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages, GatewayIntentBits.MessageContent], partials: [Partials.User, Partials.Channels, Partials.GuildMemeber, Partials.Message, Partials.Reaction]});
 const token = process.env['TOKEN'];
 
 bot.on('ready', () => {
