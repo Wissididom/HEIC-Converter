@@ -12,7 +12,7 @@
 	"dependencies": {
 		"discord.js": "^14.7.1",
 		"dotenv": "^16.0.3",
-		"file-type": "^18.0.0",
+		"file-type": "^18.1.0",
 		"heic-convert": "^1.2.4"
 	}
 }
