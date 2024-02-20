@@ -16,5 +16,8 @@
 		"dotenv": "^16.4.5",
 		"file-type": "^19.0.0",
 		"heic-convert": "^2.1.0"
+	},
+	"devDependencies": {
+		"prettier": "^3.2.5"
 	}
 }
