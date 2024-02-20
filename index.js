@@ -1,5 +1,4 @@
-import * as dotenv from "dotenv";
-dotenv.config();
+import "dotenv/config";
 import { Client, GatewayIntentBits, Partials } from "discord.js";
 import convert from "heic-convert";
 import { fileTypeFromBuffer } from "file-type";
