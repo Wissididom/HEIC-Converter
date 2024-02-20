@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Client, GatewayIntentBits, Partials } from "discord.js";
+import { Client, Events, GatewayIntentBits, Partials } from "discord.js";
 import convert from "heic-convert";
 import { fileTypeFromBuffer } from "file-type";
 const bot = new Client({
@@ -26,11 +26,11 @@ process.on("uncaughtException", (err) => {
   console.error(err, "Uncaught Exception thrown", err.stack);
 });
 
-bot.on("ready", () => {
+bot.on(Events.ClientReady, () => {
   console.log(`Logged in as ${bot.user.tag}!`);
 });
 
-bot.on("messageCreate", async (message) => {
+bot.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
   message.attachments.forEach(async (attachment) => {
     console.log(attachment.name);
