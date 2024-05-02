@@ -2,12 +2,12 @@ import "dotenv/config";
 import { Client, Events, GatewayIntentBits, Partials } from "discord.js";
 import convert from "heic-convert";
 import { fileTypeFromBuffer } from "file-type";
+
 const bot = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.MessageContent,
   ],
   partials: [
     Partials.User,
@@ -17,7 +17,6 @@ const bot = new Client({
     Partials.Reaction,
   ],
 });
-const token = process.env["TOKEN"];
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error(reason, "Unhandled Rejection at Promise", promise);
@@ -30,28 +29,20 @@ bot.on(Events.ClientReady, () => {
   console.log(`Logged in as ${bot.user.tag}!`);
 });
 
-bot.on(Events.MessageCreate, async (message) => {
-  if (message.author.bot) return;
-  message.attachments.forEach(async (attachment) => {
-    console.log(attachment.name);
-    if (attachment.name.endsWith(".heic")) {
-      const myWebhooks = (
-        await message.channel
-          .fetchWebhooks()
-          .catch((err) => console.error(JSON.stringify(err)))
-      ).filter((webhook) => webhook.owner.id == bot.user.id);
-      for (let [id, webhook] of myWebhooks)
-        await webhook
-          .delete("Cleanup Webhooks")
-          .then(() => {
-            console.log("Webhook deleted! (Cleanup)");
-          })
-          .catch((err) => console.error(JSON.stringify(err)));
+bot.on(Events.InteractionCreate, async (interaction) => {
+  let ephemeral = !(interaction.options.getBoolean("public") ?? false);
+  await interaction.deferReply({ ephemeral });
+  let attachment = interaction.options.getAttachment("image");
+  if (attachment) {
+    if (
+      attachment.name.endsWith(".heic") ||
+      attachment.contentType == "image/heic"
+    ) {
       console.log(attachment.id);
       console.log(attachment.url);
-      const fetchResponse = await fetch(attachment.url).catch((err) =>
-        console.error(JSON.stringify(err)),
-      );
+      const fetchResponse = await fetch(attachment.url).catch((err) => {
+        console.error(JSON.stringify(err));
+      });
       // console.log('fetchResponse ' + fetchResponse.status);
       const heicBuffer = Buffer.from(
         await fetchResponse
@@ -63,53 +54,45 @@ bot.on(Events.MessageCreate, async (message) => {
         console.error(JSON.stringify(err)),
       );
       console.log(fileType);
-      if (fileType.mime != "image/heic")
-        message.channel
-          .send(
-            `This is not an HEIC file! It's extension should be \`.${fileType.ext}\` (Mime-Type: \`${fileType.mime}\`)`,
-          )
+      if (fileType?.mime == "image/heic") {
+        const jpgBuffer = await convert({
+          buffer: heicBuffer,
+          format: "JPEG",
+          quality: 1,
+        }).catch((err) => console.error(JSON.stringify(err)));
+        // console.log(jpgBuffer.toString('base64'));
+        // console.log((jpgBuffer.length / 1024) + 'KB');
+        // console.log((jpgBuffer.length / 1024 / 1024) + 'MB');
+        await interaction
+          .editReply({
+            content: `Successfully converted ${attachment.name} from heic to jpg`,
+            files: [
+              {
+                attachment: jpgBuffer,
+                name: `${attachment.name}.jpg`,
+              },
+            ],
+          })
           .catch((err) => console.error(JSON.stringify(err)));
-      const jpgBuffer = await convert({
-        buffer: heicBuffer,
-        format: "JPEG",
-        quality: 1,
-      }).catch((err) => console.error(JSON.stringify(err)));
-      // console.log(jpgBuffer.toString('base64'));
-      // console.log((jpgBuffer.length / 1024) + 'KB');
-      // console.log((jpgBuffer.length / 1024 / 1024) + 'MB');
-      let webhook = await message.channel
-        .createWebhook({
-          name: message.guild
-            ? message.member.displayName
-            : message.author.username,
-          avatar: message.author.displayAvatarURL({ dynamic: true }),
-          reason: "HEIC-Converter",
-        })
-        .catch((err) => console.error(JSON.stringify(err)));
-      await webhook
-        .send({
-          username: message.guild
-            ? message.member.displayName
-            : message.author.username,
-          avatarURL: message.author.displayAvatarURL({ dynamic: true }),
-          files: [
-            {
-              attachment: jpgBuffer,
-              name: `${attachment.name}.jpg`,
-            },
-          ],
-        })
-        .then((message) => {
-          console.log("Message sent!");
-        })
-        .catch((err) => console.error(JSON.stringify(err)));
-      await webhook
-        .delete()
-        .then(() => {
-          console.log("Webhook deleted!");
-        })
-        .catch((err) => console.error(JSON.stringify(err)));
+      } else {
+        console.log(attachment.name);
+        if (fileType) {
+          await interaction.editReply({
+            content: `This is not an HEIC file! It's extension should be \`.${fileType.ext}\` (Mime-Type: \`${fileType.mime}\`)`,
+          });
+        } else {
+          await interaction.editReply({
+            content: `This is not an HEIC file! It's extension should be one of the below:\n- \`.heic\` (Mime-Type: \`image/heic\`)`,
+          });
+        }
+      }
+    } else {
+      console.log(attachment.name);
+      await interaction.editReply({
+        content: `This is not an HEIC file! It's extension should be one of the below:\n- \`.heic\` (Mime-Type: \`image/heic\`)`,
+      });
     }
-  });
+  }
 });
-bot.login(token);
+
+bot.login(process.env.TOKEN);
