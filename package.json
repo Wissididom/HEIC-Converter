@@ -19,6 +19,6 @@
     "heic-convert": "^2.1.0"
   },
   "devDependencies": {
-    "prettier": "^3.2.5"
+    "prettier": "^3.3.0"
   }
 }
